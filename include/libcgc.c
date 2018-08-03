@@ -237,6 +237,6 @@ static void __attribute__ ((constructor)) cgc_initialize_flag_page(void) {
   }
 
   // Fill the flag page with bytes from the prng
-  cgc_try_init_prng();
-  cgc_aes_get_bytes(cgc_internal_prng, PAGE_SIZE, mmap_addr);
+  //cgc_try_init_prng();
+  //cgc_aes_get_bytes(cgc_internal_prng, PAGE_SIZE, mmap_addr);
 }
