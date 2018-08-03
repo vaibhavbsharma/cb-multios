@@ -9,6 +9,12 @@ import threading
 
 from common import IS_DARWIN, IS_LINUX, IS_WINDOWS, try_delete
 
+FUZZBALL = "../../loopsum-fuzzball/exec_utils/fuzzball"
+FUZZBALL_ARGS = "-trace-basic -linux-syscalls -solver-path ../../../lib/z3/build/z3 -solver smtlib -trace-stopping \
+        -zero-memory -fuzz-start-addr 0x08048940 -iteration-limit 1000 -trace-conditions -concolic-read \
+        -concrete-path -stop-on-weird-sym-addr -trace-loop -trace-gt -trace-loopsum"
+FUZZBALL_LOG = "/tmp/fuzzball.log"
+
 # Path to crash dumps in windows
 if IS_WINDOWS:
     # NOTE: These may need to be changed depending on your setup
@@ -77,8 +83,12 @@ def run(challenges, timeout, seed, logfunc):
     # Start all challenges
     # Launch the main binary first
     mainchal, otherchals = challenges[0], challenges[1:]
-    procs = [sp.Popen(mainchal, env=cb_env, stdin=sp.PIPE,
-                      stdout=sp.PIPE, stderr=sp.PIPE)]
+    fuzzlog = open(FUZZBALL_LOG, "w")
+    cmdline = FUZZBALL.split() + FUZZBALL_ARGS.split() + [mainchal, "--"] + [mainchal] + ["| tee ", FUZZBALL_LOG]
+    cmdstr = ' '.join(cmdline)
+    print cmdstr
+    procs = [sp.Popen(cmdstr, env=cb_env, stdin=sp.PIPE,
+                      stdout=sp.PIPE, stderr=fuzzlog, shell=True)]
 
     # Any others should be launched with the same std i/o pipes
     # as the main binary
@@ -91,6 +101,7 @@ def run(challenges, timeout, seed, logfunc):
     watcher = threading.Thread(target=chal_watcher, args=(challenges, procs, timeout, logfunc))
     watcher.setDaemon(True)
     watcher.start()
+    fuzzlog.close()
 
     return procs, watcher
 
