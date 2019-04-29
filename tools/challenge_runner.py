@@ -9,10 +9,10 @@ import threading
 
 from common import IS_DARWIN, IS_LINUX, IS_WINDOWS, try_delete
 
-FUZZBALL = "../../loopsum-fuzzball/exec_utils/fuzzball"
+FUZZBALL = "../../fuzzball-loopsum/exec_utils/fuzzball"
 FUZZBALL_ARGS = "-trace-basic -linux-syscalls -solver-path ../../../lib/z3/build/z3 -solver smtlib -trace-stopping \
         -zero-memory -fuzz-start-addr 0x08048940 -iteration-limit 1000 -trace-conditions -concolic-read \
-        -concrete-path -stop-on-weird-sym-addr -trace-loop -trace-gt -trace-loopsum"
+        -concrete-path -stop-on-weird-sym-addr -use-loopsum -trace-loop -trace-loopsum"
 FUZZBALL_LOG = "/tmp/fuzzball.log"
 
 # Path to crash dumps in windows
