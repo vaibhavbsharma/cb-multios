@@ -177,7 +177,7 @@ class Runner(object):
         a = Runner(port, cb_list, xml_list, pcap, wrapper, directory,
                    should_core, failure_ok, should_debug, timeout, log_fh,
                    cb_seed, cb_seed_skip, max_send, concurrent,
-                   negotiate_seed, pov_seed, cb_no_attach)
+                   negotiate_seed, pov_seed, cb_no_attach, use_loopsum)
         a.run()
 
     Attributes:
@@ -208,7 +208,7 @@ class Runner(object):
     def __init__(self, port, cb_list, xml_list, pcap, wrapper, directory,
                  should_core, failure_ok, should_debug, timeout, log_fh,
                  cb_seed, cb_seed_skip, max_send, concurrent, negotiate_seed,
-                 pov_seed, cb_no_attach):
+                 pov_seed, cb_no_attach, use_loopsum):
         self.port = port
         self.cb_list = cb_list
         self.cb_no_attach = cb_no_attach
@@ -228,6 +228,7 @@ class Runner(object):
         self.max_send = max_send
         self.negotiate_seed = negotiate_seed
         self.pov_seed = pov_seed
+        self.use_loopsum = use_loopsum
 
         if not IS_WINDOWS:
             resource.setrlimit(resource.RLIMIT_CORE, (resource.RLIM_INFINITY,
@@ -293,6 +294,9 @@ class Runner(object):
         """
         for process in self.processes:
             process.terminate()
+
+        if 'USE_LOOPSUM' in os.environ:
+            del os.environ['USE_LOOPSUM'] 
 
     @staticmethod
     def log_packages():
@@ -632,7 +636,10 @@ class Runner(object):
             if len(i):
                 xml_sets.append(i)
 
-        # Run all tests, keeping track of how many passed
+        if self.use_loopsum:
+            os.environ['USE_LOOPSUM'] = ""
+
+    # Run all tests, keeping track of how many passed
         total_tests = sum(len(xmls) for xmls in xml_sets)
         passed_tests = 0
         for xml_list in xml_sets:
@@ -718,6 +725,8 @@ def main():
                         default=False, help='Negotate the CB seed from cb-replay')
     parser.add_argument('--cb_no_attach', required=False, action='store_true',
                         default=False, help='Do not attach to the CB')
+    parser.add_argument('--use_loopsum', required=False, action='store_true',
+                        default=False, help='Run this test with loop summarization turned on')
 
     exgroup = parser.add_argument_group(title='XML files')
     group = exgroup.add_mutually_exclusive_group(required=True)
@@ -775,7 +784,8 @@ def main():
                     args.directory, args.should_core, args.failure_ok,
                     args.debug, args.timeout, log_fh, args.cb_seed,
                     args.cb_seed_skip, args.max_send, args.concurrent,
-                    args.negotiate_seed, args.pov_seed, args.cb_no_attach)
+                    args.negotiate_seed, args.pov_seed, args.cb_no_attach,
+                    args.use_loopsum)
 
     try:
         ret = runner.run()
