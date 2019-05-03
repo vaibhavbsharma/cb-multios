@@ -14,7 +14,7 @@ FUZZBALL_ARGS = "-trace-basic -linux-syscalls -solver-path ../../../lib/z3/build
         -zero-memory -fuzz-start-addr 0x08048940 -iteration-limit 1000 -trace-conditions -concolic-read \
         -concrete-path -stop-on-weird-sym-addr"
 FUZZBALL_LOOPSUM = "-use-loopsum -trace-loop -trace-loopsum"        
-FUZZBALL_LOG = "/tmp/fuzzball.log"
+OUTDIR = "../../outputs/"
 
 # Path to crash dumps in windows
 if IS_WINDOWS:
@@ -81,14 +81,19 @@ def run(challenges, timeout, seed, logfunc):
             for i in xrange(len(challenges) * 2):
                 cb_env['PIPE_{}'.format(i)] = str(msvcrt.get_osfhandle(3 + i))  # First pipe is at 3
 
+    # Create output folder
+    if not os.path.exists(OUTDIR):
+        os.makedirs(OUTDIR)
+
     # Start all challenges
     # Launch the main binary first
     mainchal, otherchals = challenges[0], challenges[1:]
-    fuzzlog = open(FUZZBALL_LOG, "w")
+    fuzzlog_dir = OUTDIR + mainchal.split('/')[-1]
+    fuzzlog = open(fuzzlog_dir, "w+")
     cmdline = FUZZBALL.split() + FUZZBALL_ARGS.split()
     if 'USE_LOOPSUM' in os.environ:
         cmdline += FUZZBALL_LOOPSUM.split() 
-    cmdline +=  [mainchal, "--"] + [mainchal] + ["| tee ", FUZZBALL_LOG]
+    cmdline +=  [mainchal, "--"] + [mainchal] + ["| tee ", fuzzlog_dir]
     cmdstr = ' '.join(cmdline)
     print cmdstr
     procs = [sp.Popen(cmdstr, env=cb_env, stdin=sp.PIPE,
