@@ -8,10 +8,11 @@ from time import time, sleep
 import threading
 
 from common import IS_DARWIN, IS_LINUX, IS_WINDOWS, try_delete
+from elftools.elf.elffile import ELFFile
 
 FUZZBALL = "../../fuzzball-loopsum/exec_utils/fuzzball"
 FUZZBALL_ARGS = "-trace-basic -linux-syscalls -solver-path ../../../lib/z3/build/z3 -solver smtlib -trace-stopping \
-        -zero-memory -fuzz-start-addr 0x08048940 -iteration-limit 1000 -trace-conditions -concolic-read \
+        -zero-memory -iteration-limit 1000 -trace-conditions -concolic-read \
         -concrete-path -stop-on-weird-sym-addr"
 FUZZBALL_LOOPSUM = "-use-loopsum -trace-loop -trace-loopsum"        
 OUTDIR = "../../outputs/"
@@ -88,8 +89,23 @@ def run(challenges, timeout, seed, logfunc):
     # Start all challenges
     # Launch the main binary first
     mainchal, otherchals = challenges[0], challenges[1:]
+    
+    # Load fuzz start address from symbol table
+    try:
+        global FUZZBALL_ARGS
+        elf = ELFFile(open(mainchal, 'rb'))
+        symtab = elf.get_section_by_name('.symtab')
+        mains = symtab.get_symbol_by_name('main')
+        FUZZBALL_ARGS += " -fuzz-start-addr " + str(hex(mains[0]['st_value']))
+    except KeyError:
+        print "No symbolic table or main function"
+    except NameError:
+        print "No 'st_value' in main "
+
+    # Create log file
     fuzzlog_dir = OUTDIR + mainchal.split('/')[-1]
     fuzzlog = open(fuzzlog_dir, "w+")
+
     cmdline = FUZZBALL.split() + FUZZBALL_ARGS.split()
     if 'USE_LOOPSUM' in os.environ:
         cmdline += FUZZBALL_LOOPSUM.split() 
