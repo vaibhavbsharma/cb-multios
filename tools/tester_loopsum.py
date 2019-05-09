@@ -12,9 +12,8 @@ from common import debug, listdir
 
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS_DIR)
-OUTDIR = "../../outputs/"
 CHAL_DIR = os.path.join(ROOT, 'challenges')
-BUILD_DIR = os.path.join(ROOT, 'build', 'challenges')
+BUILD_DIR = os.path.join(ROOT, 'loopsum', 'challenges')
 
 IS_WINDOWS = sys.platform == 'win32'
 

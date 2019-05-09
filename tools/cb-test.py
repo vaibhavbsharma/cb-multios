@@ -46,7 +46,6 @@ from common import IS_WINDOWS
 if not IS_WINDOWS:
     import resource
 
-
 def add_ext(s):
     return '{}{}'.format(s, '.exe' if IS_WINDOWS else '')
 
@@ -177,7 +176,7 @@ class Runner(object):
         a = Runner(port, cb_list, xml_list, pcap, wrapper, directory,
                    should_core, failure_ok, should_debug, timeout, log_fh,
                    cb_seed, cb_seed_skip, max_send, concurrent,
-                   negotiate_seed, pov_seed, cb_no_attach, use_loopsum)
+                   negotiate_seed, pov_seed, cb_no_attach, use_loopsum, outdir)
         a.run()
 
     Attributes:
@@ -200,6 +199,8 @@ class Runner(object):
         negotiate_seed: Should the CB seed be negotiated from cb-replay
         pov_seed: the PRNG seed for POVs
         cb_no_attach: Should the CB not be attached within cb-server
+        use_loopsum: Should the CB run with loop summarizaion
+        outdir: path to the output folder
     """
     pov_signals = [signal.SIGSEGV, signal.SIGILL]
     if not IS_WINDOWS:
@@ -208,7 +209,7 @@ class Runner(object):
     def __init__(self, port, cb_list, xml_list, pcap, wrapper, directory,
                  should_core, failure_ok, should_debug, timeout, log_fh,
                  cb_seed, cb_seed_skip, max_send, concurrent, negotiate_seed,
-                 pov_seed, cb_no_attach, use_loopsum):
+                 pov_seed, cb_no_attach, use_loopsum, outdir):
         self.port = port
         self.cb_list = cb_list
         self.cb_no_attach = cb_no_attach
@@ -229,6 +230,7 @@ class Runner(object):
         self.negotiate_seed = negotiate_seed
         self.pov_seed = pov_seed
         self.use_loopsum = use_loopsum
+        self.outdir = outdir
 
         if not IS_WINDOWS:
             resource.setrlimit(resource.RLIMIT_CORE, (resource.RLIM_INFINITY,
@@ -368,6 +370,11 @@ class Runner(object):
             replay_bin = os.path.join('.', 'cb-replay-pov.py')
 
         replay_cmd = [sys.executable, replay_bin, '--debug', '--cbs'] + cb_paths
+
+        # Create output folder pass the dir to cb-replay(-pov) via environ
+        if not os.path.exists(self.outdir):
+            os.makedirs(self.outdir)
+        os.environ['OUTDIR'] = self.outdir
 
         if self.timeout > 0:
             replay_cmd += ['--timeout', '%d' % self.timeout]
@@ -727,6 +734,8 @@ def main():
                         default=False, help='Do not attach to the CB')
     parser.add_argument('--use_loopsum', required=False, action='store_true',
                         default=False, help='Run this test with loop summarization turned on')
+    parser.add_argument('--outdir', required=False, type=str, 
+            default="../../outputs", help='path to the output folder')
 
     exgroup = parser.add_argument_group(title='XML files')
     group = exgroup.add_mutually_exclusive_group(required=True)
@@ -785,7 +794,7 @@ def main():
                     args.debug, args.timeout, log_fh, args.cb_seed,
                     args.cb_seed_skip, args.max_send, args.concurrent,
                     args.negotiate_seed, args.pov_seed, args.cb_no_attach,
-                    args.use_loopsum)
+                    args.use_loopsum, args.outdir)
 
     try:
         ret = runner.run()

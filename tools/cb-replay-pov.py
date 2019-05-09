@@ -41,6 +41,7 @@ import threading
 from common import IS_WINDOWS, Timeout, TimeoutError
 import challenge_runner
 
+OUTDIR = os.getenv('OUTDIR', "../../outputs")
 
 def get_fd(fileobj):
     """ Gets the file descriptor for a given fileobject
@@ -252,11 +253,15 @@ class Throw(object):
         """
         self.log('%s' % (self.pov))
 
+        # Set FuzzBALL log file dir
+        logfile = os.path.join(OUTDIR, self.cb_paths[0].split('/')[-1] \
+                + "_" + self.pov.split('/')[-1].split('.')[0] + ".log")
+
         # Get the seed for the tests
         seed = self.gen_seed()
 
         # Launch the challenges
-        self.procs, watcher = challenge_runner.run(self.cb_paths, self.timeout, seed, self.log)
+        self.procs, watcher = challenge_runner.run(self.cb_paths, self.timeout, seed, self.log, logfile)
 
         # Setup and run the POV
         pov_pipes = mp.Pipe(duplex=True)
