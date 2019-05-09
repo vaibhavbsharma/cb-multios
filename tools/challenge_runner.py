@@ -16,6 +16,10 @@ FUZZBALL_ARGS = "-trace-basic -linux-syscalls -solver-path ../../../lib/z3/build
         -zero-memory -trace-conditions -concolic-read \
         -stop-on-weird-sym-addr"
 FUZZBALL_LOOPSUM = "-use-loopsum -trace-loop -trace-loopsum"        
+FUZZBALL_OPT = ""
+
+if 'FUZZBALLOPT' in os.environ:
+    FUZZBALL_OPT = os.environ['FUZZBALLOPT']
 
 # Path to crash dumps in windows
 if IS_WINDOWS:
@@ -101,7 +105,7 @@ def run(challenges, timeout, seed, logfunc, logfile):
     # Create log file
     fuzzlog = open(logfile, "w+")
 
-    cmdline = FUZZBALL.split() + FUZZBALL_ARGS.split()     
+    cmdline = FUZZBALL.split() + FUZZBALL_ARGS.split() + FUZZBALL_OPT.split()
     if 'USE_LOOPSUM' in os.environ:
         cmdline += FUZZBALL_LOOPSUM.split() 
     cmdline +=  [mainchal, "--"] + [mainchal] + ["| tee ", logfile]
