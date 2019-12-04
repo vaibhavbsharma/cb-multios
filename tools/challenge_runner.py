@@ -10,11 +10,19 @@ import threading
 from common import IS_DARWIN, IS_LINUX, IS_WINDOWS, try_delete
 from elftools.elf.elffile import ELFFile
 
-FUZZBALL = "../../fuzzball-loopsum/exec_utils/fuzzball"
-FUZZBALL_ARGS = "-trace-basic -linux-syscalls -solver-path ../../../lib/z3/build/z3 -solver smtlib -trace-stopping \
-        -concolic-prob 1.0 -num-paths 2 \
-        -zero-memory -trace-conditions -concolic-read \
+FUZZBALL = "/export/scratch/vaibhav/fuzzball-adaptorsynth/exec_utils/fuzzball"
+# FUZZBALL = "/export/scratch/vaibhav/myfuzzball/fuzzball-upstream/exec_utils/fuzzball"
+# FUZZBALL_ARGS = "-trace-basic -linux-syscalls -solver smtlib -trace-stopping \
+#         -solver-path /export/scratch/vaibhav/fuzzball-adaptorsynth/stp/stp \
+#         -concolic-prob 1.0 -num-paths 1 \
+#         -zero-memory -trace-conditions -concolic-stdin\
+#         -stop-on-weird-sym-addr"
+FUZZBALL_ARGS = "-trace-basic -linux-syscalls -solver smtlib -trace-stopping \
+        -solver-path /export/scratch/vaibhav/fuzzball-adaptorsynth/stp/stp \
+        -concrete-path \
+        -zero-memory -trace-conditions -concolic-stdin\
         -stop-on-weird-sym-addr"
+
 FUZZBALL_LOOPSUM = "-use-loopsum -trace-loop -trace-loopsum"        
 FUZZBALL_OPT = ""
 
@@ -44,7 +52,7 @@ def run(challenges, timeout, seed, logfunc, logfile):
         (list): all processes that were started
     """
     cb_env = {'seed': seed}  # Environment variables for all challenges
-
+    
     # This is the first fd after all of the challenges
     last_fd = 2 * len(challenges) + 3
 
@@ -104,11 +112,11 @@ def run(challenges, timeout, seed, logfunc, logfile):
 
     # Create log file
     fuzzlog = open(logfile, "w+")
-
+    
     cmdline = FUZZBALL.split() + FUZZBALL_ARGS.split() + FUZZBALL_OPT.split()
     if 'USE_LOOPSUM' in os.environ:
         cmdline += FUZZBALL_LOOPSUM.split() 
-    cmdline +=  [mainchal, "--"] + [mainchal] + ["| tee ", logfile]
+    cmdline +=  [mainchal, "--"] + [mainchal] + ["|& tee ", logfile]
     cmdstr = ' '.join(cmdline)
     print cmdstr
     procs = [sp.Popen(cmdstr, env=cb_env, stdin=sp.PIPE,
